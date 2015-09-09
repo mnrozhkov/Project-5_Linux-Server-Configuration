@@ -21,42 +21,42 @@ iii. A summary of software you installed and configuration changes made.
 ---------------------------- 
 	Ste 1: Set up users 
 	
-	Create user
+		Create user
 
-		user add student
+			user add student
 
-	Provide student root priveleges 
-	
-		gpasswd -a student sudo
+		Provide student root priveleges 
+		
+			gpasswd -a student sudo
 
-	Setup SSH authentification 
-		Generate SSH key pair on LOCAL machine !!! 
-			ssh-keygen
-		Place public key to the remote server 
-			log into remote server as 'student': ssh student@37.143.11.88
-			sudo mkdir .ssh (within 'home' directory)
-			sudo touch .ssh/authorized_keys (create file for storing pub keys)
-			sudo nano .ssh/authorized_keys (open file in editor and copy there my public key, save)
-			chmod 700 .ssh (set permission)
-			chmod 644 .ssh/authorized_keys
-		All done! Log in as a student user, authorizing by ssh public key:
-			ssh student@37.143.11.88 -p 22 -i [PATH_TO_PUBLIC_KEY]
-		Disable password login:
-			sudo nano /etc/ssh/sshd_config
-			-> set 'PasswordAuthentification' to 'no'
-		Restart the service
-			sudo service ssh restart
+		Setup SSH authentification 
+			Generate SSH key pair on LOCAL machine !!! 
+				ssh-keygen
+			Place public key to the remote server 
+				log into remote server as 'student': ssh student@37.143.11.88
+				sudo mkdir .ssh (within 'home' directory)
+				sudo touch .ssh/authorized_keys (create file for storing pub keys)
+				sudo nano .ssh/authorized_keys (open file in editor and copy there my public key, save)
+				chmod 700 .ssh (set permission)
+				chmod 644 .ssh/authorized_keys
+			All done! Log in as a student user, authorizing by ssh public key:
+				ssh student@37.143.11.88 -p 22 -i [PATH_TO_PUBLIC_KEY]
+			Disable password login:
+				sudo nano /etc/ssh/sshd_config
+				-> set 'PasswordAuthentification' to 'no'
+			Restart the service
+				sudo service ssh restart
 
 
-	Install required Linux packages 
+		Install required Linux packages 
 
-		sudo apt-get nano
-		sudo apt-get install sudo
-		sudo apt-get install man
-		sudo apt-get install finger
-		sudo apt-get install ufw
-		sudo apt-get install python
-		sudo apt-get install git
+			sudo apt-get nano
+			sudo apt-get install sudo
+			sudo apt-get install man
+			sudo apt-get install finger
+			sudo apt-get install ufw
+			sudo apt-get install python
+			sudo apt-get install git
 
 	Step 2: Install python-pip
 			
@@ -112,6 +112,75 @@ iii. A summary of software you installed and configuration changes made.
 			sudo ufw logging on
 
 
+	Step 9: Running uWSGI via Upstart
+
+		Install uWSGI: 
+
+			sudo pip install uwsgi
+
+		First, set up the directories the service will use.
+
+			# Create a directory for the UNIX sockets
+			sudo mkdir /var/run/flask-uwsgi
+			sudo chown www-data:www-data /var/run/flask-uwsgi
+
+			# Create a directory for the logs
+			sudo mkdir /var/log/flask-uwsgi
+			sudo chown www-data:www-data /var/log/flask-uwsgi
+
+			# Create a directory for the configs
+			sudo mkdir /etc/flask-uwsgi
+
+		Next, create the config file.
+
+			Create flask-uwsgi.conf: 
+				cd /etc/init
+				sudo touch flask-uwsgi.conf
+
+			Add lines below to the flask-uwsgi.conf: sudo nano flask-uwsgi.conf
+
+				start on [2345]
+				stop on [06]
+
+				script
+				    cd /var/www/Project-3_Item-Catalog/Project-3_Item-Catalog
+				    exec python finalproject.py
+				end script
+
+		Next, create the init script:
+
+			Create flask-uwsgi.ini: 
+
+				cd /etc/flask-uwsgi
+				sudo touch flask-uwsgi.ini
+
+			Add lines below to the flask-uwsgi.conf: sudo nano flask-uwsgi.ini
+			(Set uid and gid to the numeric uid and gid for www-data.)
+				
+				[uwsgi]
+				socket = /var/run/flask-uwsgi/flask-uwsgi.sock
+				home = env
+				wsgi-file = /var/www/Project-3_Item-Catalog/Project-3_Item-Catalog/finalproject.py
+				callable = app 
+				master = true
+				; www-data uid/gid
+				uid = 1
+				gid = 1
+				die-on-term = true
+				processes = 4
+				threads = 2
+				logger = file:/var/log/flask-uwsgi/flask-uwsgi.log
+		
+		Next, start uWSGI:
+
+			sudo service flask-uwsgi start
+			(to stop: sudo service flask-uwsgi start)
+
+		Next, check that uWSGI is running.
+
+			sudo less /var/log/flask-uwsgi/flask-uwsgi.log
+
+
 iv. A list of any third-party resources I've used of to complete this project.
 ---------------------------- 
 	1. Initial Server Setup with Ubuntu 14.04 (https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-14-04)
@@ -119,3 +188,4 @@ iv. A list of any third-party resources I've used of to complete this project.
 	3. Additional Recommended Steps for New Ubuntu 14.04 Servers (https://www.digitalocean.com/community/tutorials/additional-recommended-steps-for-new-ubuntu-14-04-servers)
 	4. UFW - Uncomplicated Firewall (https://help.ubuntu.com/community/UFW)
 	5. How To Deploy a Flask Application on an Ubuntu VPS (https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps)
+	6. Flask with uWSGI + Nginx (https://github.com/mking/flask-uwsgi)
