@@ -29,6 +29,10 @@ iii. A summary of software you installed and configuration changes made.
 		
 			gpasswd -a student sudo
 
+		Set user password to expire 
+
+			sudo passwd -e student
+
 		Setup SSH authentification 
 			Generate SSH key pair on LOCAL machine !!! 
 				ssh-keygen
@@ -39,8 +43,18 @@ iii. A summary of software you installed and configuration changes made.
 				sudo nano .ssh/authorized_keys (open file in editor and copy there my public key, save)
 				chmod 700 .ssh (set permission)
 				chmod 644 .ssh/authorized_keys
+			
 			All done! Log in as a student user, authorizing by ssh public key:
 				ssh student@37.143.11.88 -p 22 -i [PATH_TO_PUBLIC_KEY]
+
+				ssh student@37.143.11.88 -p 22 -i ~/.ssh/linux_ihc.pub 
+				(/c/Users/Mikhail/.ssh/linux_ihc.pub)
+
+			Change the default SSH port
+
+				sudo nano /etc/ssh/sshd_config
+				sudo /etc/init.d/ssh restart
+
 			Disable password login:
 				sudo nano /etc/ssh/sshd_config
 				-> set 'PasswordAuthentification' to 'no'
@@ -104,13 +118,14 @@ iii. A summary of software you installed and configuration changes made.
 		Configure firewall using 'ufw':
 			sudo ufw default deny incoming
 			sudo ufw default allow outgoing
-			sudo ufw allow ssh
-			sudo ufw allow 3000 (port used to configure App in finalproject.py)
+			sudo ufw allow 53185/tcp
+			sudo ufw allow 3000/tcp (port used to configure App in finalproject.py)
 			sudo ufw enable 
 
 		To enable logging use:
 			sudo ufw logging on
 
+		To reset everything: sudo ufw reset
 
 	Step 9: Running uWSGI via Upstart
 
@@ -181,6 +196,33 @@ iii. A summary of software you installed and configuration changes made.
 			sudo less /var/log/flask-uwsgi/flask-uwsgi.log
 
 
+	Step 10: Additional security settings
+
+		Install Fail2Ban on Ubuntu 14.04
+			
+			sudo apt-get update
+			sudo apt-get install fail2ban
+
+		Configure Fail2Ban with your Service Settings
+			
+			We need to copy this to a file called jail.local for fail2ban to find it:
+				
+				sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+			
+			Once the file is copied, we can open it for editing to see how everything works:
+				
+				sudo nano /etc/fail2ban/jail.local
+
+				ignoreip = 127.0.0.1/8
+				bantime = 600
+				findtime = 600
+				maxretry = 3
+				destemail = mikhail_job@mail.ru  (email address that should receive ban messages)
+				sendername = Fail2Ban  ("From" field in the email)
+				mta = sendmail (mta parameter configures what mail service will be used to send mail)
+
+
+
 iv. A list of any third-party resources I've used of to complete this project.
 ---------------------------- 
 	1. Initial Server Setup with Ubuntu 14.04 (https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-14-04)
@@ -189,3 +231,4 @@ iv. A list of any third-party resources I've used of to complete this project.
 	4. UFW - Uncomplicated Firewall (https://help.ubuntu.com/community/UFW)
 	5. How To Deploy a Flask Application on an Ubuntu VPS (https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps)
 	6. Flask with uWSGI + Nginx (https://github.com/mking/flask-uwsgi)
+	7. How To Protect SSH with Fail2Ban on Ubuntu 14.04 (https://www.digitalocean.com/community/tutorials/how-to-protect-ssh-with-fail2ban-on-ubuntu-14-04)
